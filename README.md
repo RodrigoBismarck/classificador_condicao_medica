@@ -139,7 +139,7 @@ Para este sistema de classificação médica, recomendamos uma **abordagem híbr
 
 ### MLOps e Orquestração
 
-- **Apache Airflow** (2.7.3): Orquestração de pipeline baseada em DAG
+- **Apache Airflow** (2.9.0, via imagem Docker): Orquestração de pipeline baseada em DAG
 - **Docker** & **Docker Compose**: Containerização e orquestração
 
 ### Monitoramento e Observabilidade
@@ -150,8 +150,9 @@ Para este sistema de classificação médica, recomendamos uma **abordagem híbr
 
 ### Otimização de Modelo
 
-- **skl2onnx** (1.16.0): Converte modelos scikit-learn para formato ONNX
-- **onnxruntime** (1.17.0): Inferência otimizada em modelos ONNX
+- **skl2onnx** (1.17.0): Converte modelos scikit-learn para formato ONNX
+- **onnx** (1.16.1): Versão compatível para exportação ONNX no projeto
+- **onnxruntime** (1.19.0): Inferência otimizada em modelos ONNX
 
 ### Testes e Qualidade de Código
 
@@ -206,6 +207,8 @@ conda activate medical-classifier
 pip install -r requirements.txt
 ```
 
+Observação: o Airflow roda em imagem Docker dedicada. As dependências dele estão em `airflow/requirements-airflow.txt` e não precisam ser instaladas no venv local.
+
 Verifique a instalação:
 ```bash
 python -c "import pandas, sklearn, fastapi; print('Dependências instaladas com sucesso')"
@@ -216,6 +219,10 @@ python -c "import pandas, sklearn, fastapi; print('Dependências instaladas com 
 ```bash
 # Arquivos de dados devem estar em data/raw/
 # Verifique se existem:
+# Windows (PowerShell)
+dir data/raw/
+
+# macOS/Linux
 ls data/raw/
 # Devem aparecer: medical_tc_labels.csv, medical_tc_train.csv, medical_tc_test.csv
 ```
@@ -227,8 +234,8 @@ python train_model.py
 ```
 
 **Saída:**
-- `data/models/classifier_model.pkl` - Random Forest treinado
-- `data/models/tfidf_vectorizer.pkl` - Vetorizador TF-IDF ajustado
+- `data/models/modelo_medico.pkl` - Random Forest treinado
+- `data/models/vetorizador_medico.pkl` - Vetorizador TF-IDF ajustado
 - Métricas de treinamento impressas no console
 
 ---
@@ -252,18 +259,20 @@ Visite: `http://localhost:8000/docs` para documentação interativa Swagger
 curl -X POST "http://localhost:8000/predict" \
   -H "Content-Type: application/json" \
   -d '{
-    "text": "Paciente apresenta tosse persistente e achados anormais em radiografia de tórax consistentes com malignidade pulmonar"
+    "texto": "Paciente apresenta tosse persistente e achados anormais em radiografia de tórax consistentes com malignidade pulmonar"
   }'
 ```
 
 **Resposta:**
 ```json
 {
-  "status": "sucesso",
-  "condition_id": 1,
-  "condition": "neoplasias",
-  "confidence": 0.94,
-  "input_text": "Paciente apresenta tosse persistente..."
+  "texto_original": "Paciente apresenta tosse persistente...",
+  "classe_predita": "neoplasias",
+  "id_classe": 1,
+  "confianca": 0.94,
+  "todas_probabilidades": {
+    "neoplasias": 0.94
+  }
 }
 ```
 
@@ -273,7 +282,7 @@ curl -X POST "http://localhost:8000/predict" \
 curl -X POST "http://localhost:8000/predict-batch" \
   -H "Content-Type: application/json" \
   -d '{
-    "texts": [
+    "textos": [
       "Paciente com tumor maligno requerendo quimioterapia imediata",
       "Úlcera gástrica severa causando dor abdominal persistente",
       "Distúrbio neurológico causando tremores e fraqueza"
@@ -306,16 +315,16 @@ pytest tests/ -v --cov=src
 # Teste 1: Predição válida
 POST /predict
 {
-  "text": "Paciente com câncer pancreático avançado e metástase"
+  "texto": "Paciente com câncer pancreático avançado e metástase"
 }
-Esperado: condition_id=1 (neoplasias), confidence>0.8
+Esperado: id_classe=1 (neoplasias), confianca>0.8
 
 # Teste 2: Condição digestiva
 POST /predict
 {
-  "text": "Úlcera duodenal severa com sangramento ativo requerendo intervenção endoscópica"
+  "texto": "Úlcera duodenal severa com sangramento ativo requerendo intervenção endoscópica"
 }
-Esperado: condition_id=2 (doenças do sistema digestivo)
+Esperado: id_classe=2 (doenças do sistema digestivo)
 
 # Teste 3: Condição cardiovascular
 POST /predict
@@ -554,10 +563,10 @@ medical_classifier_inferences_total{model_type}
 
 ```bash
 # Inicie API + Prometheus + Grafana com docker-compose
-docker-compose up -d
+docker compose up -d api prometheus grafana
 
 # Verifique se os serviços estão rodando
-docker-compose ps
+docker compose ps
 ```
 
 **URLs dos Serviços:**
@@ -568,6 +577,13 @@ docker-compose ps
 ### Painéis Grafana
 
 Painéis pré-configurados com 3 painéis essenciais:
+
+Arquivo do entregável (JSON versionado):
+- `monitoring/grafana/dashboards/medical-api-dashboard.json`
+
+Provisionamento automático:
+- Datasource Prometheus: `monitoring/grafana/datasources/prometheus.yml`
+- Provider de dashboards: `monitoring/grafana/dashboards/dashboard-provider.yml`
 
 #### Painel 1: Volume de Requisições e Desempenho
 
@@ -623,6 +639,31 @@ curl "http://localhost:9090/api/v1/query?query=up"
 # Veja painéis Grafana (requer login)
 # Credenciais padrão: admin/admin
 ```
+
+### Airflow via Imagem Docker
+
+O Airflow está configurado para rodar por imagem Docker dedicada, sem dependência do Python local.
+
+```bash
+# 1) Build e subida do Airflow
+docker compose up -d --build airflow
+
+# 2) Validar DAG carregada
+docker compose exec airflow airflow dags list
+
+# 3) Validar import da DAG
+docker compose exec airflow airflow dags list-import-errors
+
+# 4) Testar primeira tarefa da DAG
+docker compose exec airflow airflow tasks test pipeline_treinamento_condicoes_medicas carregar_dados_task 2026-09-12
+```
+
+Arquivos da configuração de imagem do Airflow:
+- `airflow/Dockerfile`
+- `airflow/requirements-airflow.txt`
+- `airflow/dags/training_dag.py`
+
+URL da UI do Airflow: `http://localhost:8080`
 
 ---
 
@@ -748,9 +789,11 @@ classificador_condicao_medica/
 │   └── workflows/
 │       └── ci.yml                  # Workflow GitHub Actions CI/CD
 ├── airflow/
+│   ├── Dockerfile                # Imagem dedicada do Airflow
+│   ├── requirements-airflow.txt  # Dependências Python do container Airflow
 │   ├── dags/
 │   │   └── training_dag.py        # Airflow DAG para retreinamento de modelo
-│   └── docker-compose.yml         # Serviços Airflow
+│   └── runtime/                   # Estado local do Airflow (db/logs)
 ├── data/
 │   ├── raw/                       # Arquivos CSV originais
 │   ├── processed/                 # Dados processados (auto-gerado)

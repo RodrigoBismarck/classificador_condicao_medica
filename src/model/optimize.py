@@ -65,7 +65,10 @@ class OtimizadorONNX:
 
         try:
             # Define tipos iniciais (entrada é matriz densa de features TF-IDF)
-            tipos_iniciais = [("X", FloatTensorType([None, self.vetorizador.n_features_in_]))]
+            n_features = getattr(self.classificador, "n_features_in_", None)
+            if n_features is None:
+                n_features = len(getattr(self.vetorizador, "vocabulary_", {}))
+            tipos_iniciais = [("X", FloatTensorType([None, int(n_features)]))]
 
             # Converte modelo para ONNX
             modelo_onnx = skl2onnx.convert_sklearn(
@@ -168,7 +171,7 @@ class BenchmarkLatência:
         """
         textos_processados = [self.preprocessador.preprocessar(texto) for texto in textos]
         X = self.vetorizador.transform(textos_processados)
-        n_batches = (len(X) + tamanho_batch - 1) // tamanho_batch
+        n_batches = (X.shape[0] + tamanho_batch - 1) // tamanho_batch
 
         return X, n_batches
 
