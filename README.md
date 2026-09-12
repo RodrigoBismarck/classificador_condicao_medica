@@ -721,11 +721,13 @@ Tempo Total de Requisição: 50ms
 
 ## Pipeline CI/CD
 
-### Workflow GitHub Actions
+### Workflows GitHub Actions
 
-**Arquivo**: `.github/workflows/ci.yml`
+**Arquivos**:
+- `.github/workflows/ci.yml` (CI)
+- `.github/workflows/cd.yml` (CD)
 
-O pipeline é executado automaticamente em cada push ou pull request:
+O pipeline de CI é executado automaticamente em cada push ou pull request:
 
 ```yaml
 1. LINT (Qualidade de Código)
@@ -752,6 +754,20 @@ O pipeline é executado automaticamente em cada push ou pull request:
 
 **Tempo Total do Pipeline**: ~8 minutos
 
+O pipeline de CD é executado automaticamente quando uma tag `v*` é publicada (exemplo: `v1.0.0`):
+
+```yaml
+1. TEST (Validação Final)
+  └─ pytest: execução de testes automatizados
+
+2. BUILD RELEASE BUNDLE
+  └─ Gera ZIP versionado com código, modelos e arquivos de execução
+
+3. PUBLISH RELEASE (GitHub)
+  ├─ Cria GitHub Release automaticamente
+  └─ Anexa artefato ZIP da versão
+```
+
 ### Executando Localmente
 
 ```bash
@@ -775,6 +791,7 @@ bandit -r src
 - Rastreamento de Cobertura: Mínimo de 70% de cobertura de código aplicado
 - Scanning de Segurança: Detecta dependências vulneráveis
 - Feedback Rápido: O pipeline é concluído em menos de 10 minutos
+- Entrega Contínua no GitHub: Release automática por tag com artefatos versionados
 - Commits Semânticos: Formato de commit convencional aplicado
 
 ---
