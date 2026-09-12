@@ -14,6 +14,11 @@ except LookupError:
     nltk.download('punkt')
 
 try:
+    nltk.data.find('tokenizers/punkt_tab')
+except LookupError:
+    nltk.download('punkt_tab')
+
+try:
     nltk.data.find('corpora/stopwords')
 except LookupError:
     nltk.download('stopwords')
@@ -100,6 +105,18 @@ class PreprocessadorTexto:
         texto = self.remover_stopwords(texto)
         texto = self.lematizar(texto)
         return texto
+
+    def preprocessar_lote(self, textos) -> list:
+        """
+        Pré-processa um lote de textos usando a instância atual.
+
+        Args:
+            textos: Lista de strings de texto
+
+        Returns:
+            Lista de textos pré-processados
+        """
+        return [self.preprocessar(texto) for texto in textos]
 
 
 def preprocessar_lote(textos, preprocessador=None):
