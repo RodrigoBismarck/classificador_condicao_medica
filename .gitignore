@@ -49,6 +49,8 @@ logs/
 # Airflow
 airflow.db
 airflow/logs/
+.airflow/
+airflow/runtime/
 
 # Environment
 .env

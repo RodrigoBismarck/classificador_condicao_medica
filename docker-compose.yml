@@ -1,6 +1,25 @@
 version: '3.8'
 
 services:
+  # Airflow (image-based)
+  airflow:
+    build:
+      context: .
+      dockerfile: airflow/Dockerfile
+    container_name: medical_classifier_airflow
+    ports:
+      - "8080:8080"
+    environment:
+      - AIRFLOW_HOME=/opt/airflow
+      - AIRFLOW__CORE__LOAD_EXAMPLES=False
+      - AIRFLOW__CORE__DAGS_FOLDER=/opt/airflow/project/airflow/dags
+      - PYTHONPATH=/opt/airflow/project
+    volumes:
+      - ./:/opt/airflow/project
+      - ./airflow/runtime:/opt/airflow
+    command: airflow standalone
+    restart: unless-stopped
+
   # Medical Text Classifier API
   api:
     build:
@@ -14,8 +33,8 @@ services:
       - API_PORT=8000
       - API_DEBUG=False
       - LOG_LEVEL=INFO
-      - MODEL_PATH=data/models/classifier_model.pkl
-      - VECTORIZER_PATH=data/models/tfidf_vectorizer.pkl
+      - MODEL_PATH=data/models/modelo_medico.pkl
+      - VECTORIZER_PATH=data/models/vetorizador_medico.pkl
     volumes:
       - ./data:/app/data
       - ./logs:/app/logs
