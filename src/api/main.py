@@ -9,6 +9,7 @@ from datetime import datetime
 from typing import Dict, List, Optional
 
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import PlainTextResponse
 from prometheus_client import Counter, Histogram, generate_latest
 from pydantic import BaseModel, Field
 
@@ -272,7 +273,7 @@ async def obter_metricas():
     Returns:
         Métricas em formato text/plain
     """
-    return generate_latest().decode("utf-8")
+    return PlainTextResponse(generate_latest().decode("utf-8"), media_type="text/plain")
 
 
 if __name__ == "__main__":
