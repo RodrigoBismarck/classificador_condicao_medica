@@ -1,0 +1,55 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Models & Data
+data/models/*.pkl
+data/models/*.joblib
+data/models/*.onnx
+data/processed/
+
+# Logs
+logs/
+*.log
+
+# Airflow
+airflow.db
+airflow/logs/
+
+# Environment
+.env
+.env.local
