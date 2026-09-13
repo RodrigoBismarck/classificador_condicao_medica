@@ -38,7 +38,7 @@ class RequisicaoPredição(BaseModel):
     texto: str = Field(..., min_length=1, max_length=5000, description="Texto médico a classificar")
 
     class Config:
-        example = {"texto": "Apresenta dispneia progressiva e tosse seca por 3 semanas"}
+        example = {"texto": "Advanced pancreatic cancer with metastasis"}
 
 
 class RequisicaoPredçãoLote(BaseModel):
@@ -51,8 +51,9 @@ class RequisicaoPredçãoLote(BaseModel):
     class Config:
         example = {
             "textos": [
-                "Paciente com febre e tosse",
-                "Dor no peito irradiada para braço esquerdo",
+                "Advanced pancreatic cancer with metastasis",
+                "Atrial fibrillation detected on ECG with rapid ventricular response",
+                "Fever, chills, and signs of sepsis of unknown origin",
             ]
         }
 

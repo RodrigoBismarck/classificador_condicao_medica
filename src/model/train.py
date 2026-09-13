@@ -2,6 +2,7 @@
 Módulo de treinamento do classificador de texto médico.
 """
 
+import csv
 import logging
 from pathlib import Path
 from typing import Dict, Tuple
@@ -79,7 +80,29 @@ class ClassificadorTextoMedico:
         self.preprocessador = PreprocessadorTexto()
         self.mapa_labels = {}
         self.mapa_labels_inverso = {}
+        self.nomes_condicoes = self._carregar_nomes_condicoes()
         self.metricas = {}
+
+    @staticmethod
+    def _carregar_nomes_condicoes() -> Dict[int, str]:
+        """Carrega nomes das condições a partir do arquivo de labels do dataset."""
+        caminho_labels = Path("data/raw/medical_tc_labels.csv")
+
+        if not caminho_labels.exists():
+            logger.warning("Arquivo de labels não encontrado em %s", caminho_labels)
+            return {}
+
+        with caminho_labels.open("r", encoding="utf-8", newline="") as arquivo:
+            leitor = csv.DictReader(arquivo)
+            return {
+                int(linha["condition_label"]): linha["condition_name"]
+                for linha in leitor
+                if linha.get("condition_label") and linha.get("condition_name")
+            }
+
+    def _obter_nome_classe(self, label: int) -> str:
+        """Resolve o nome textual de uma condição a partir do label."""
+        return self.nomes_condicoes.get(int(label), str(label))
 
     def _preparar_dados(self, textos: list, labels: list = None) -> Tuple[np.ndarray, np.ndarray]:
         """
@@ -139,7 +162,9 @@ class ClassificadorTextoMedico:
         # Cria mapeamento de labels
         labels_unicos = sorted(set(labels))
         self.mapa_labels = {label: idx for idx, label in enumerate(labels_unicos)}
-        self.mapa_labels_inverso = {idx: str(label) for label, idx in self.mapa_labels.items()}
+        self.mapa_labels_inverso = {
+            int(label): self._obter_nome_classe(int(label)) for label in labels_unicos
+        }
 
         logger.info(f"Mapeamento de labels: {self.mapa_labels}")
 
