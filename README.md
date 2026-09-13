@@ -1,6 +1,6 @@
 # Classificador de Condições Médicas - Modelo NLP com MLOps
 
-[![Pipeline CI/CD](https://github.com/seuusuario/classificador_condicao_medica/actions/workflows/ci.yml/badge.svg)](https://github.com/seuusuario/classificador_condicao_medica/actions)
+[![Pipeline CI/CD](https://github.com/RodrigoBismarck/classificador_condicao_medica/actions/workflows/ci.yml/badge.svg)](https://github.com/RodrigoBismarck/classificador_condicao_medica/actions)
 [![Python 3.11+](https://img.shields.io/badge/Python-3.11%2B-blue.svg)](https://www.python.org/downloads/)
 [![Licensa](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
@@ -42,29 +42,35 @@ Classificar automaticamente observações médicas (descrições de pacientes, l
 ### Contrato de Entrada/Saída do Modelo
 
 **Entrada:**
-- Observação médica como texto em linguagem natural (10-10.000 caracteres)
-- Exemplo: "Paciente apresenta tosse persistente e achados anormais em radiografia de tórax"
+- Observação médica como texto em linguagem natural em inglês (1-5000 caracteres)
+- Exemplo: "Advanced pancreatic cancer with metastasis"
 
 **Saída:**
 ```json
 {
-  "status": "sucesso",
-  "condition_id": 1,
-  "condition": "neoplasias",
-  "confidence": 0.92,
-  "input_text": "Paciente apresenta tosse persistente..."
+  "texto_original": "Advanced pancreatic cancer with metastasis",
+  "classe_predita": "neoplasms",
+  "id_classe": 1,
+  "confianca": 0.5427,
+  "todas_probabilidades": {
+    "neoplasms": 0.5427,
+    "digestive system diseases": 0.0833,
+    "nervous system diseases": 0.082,
+    "cardiovascular diseases": 0.0661,
+    "general pathological conditions": 0.2258
+  }
 }
 ```
 
 ### Categorias de Doenças Apoiadas
 
-| ID | Condição | Descrição |
-|----|----------|-----------|
-| 1 | **Neoplasias** | Tumores e condições relacionadas ao câncer |
-| 2 | **Doenças do Sistema Digestivo** | Distúrbios do trato GI (úlceras, inflamação, etc.) |
-| 3 | **Doenças do Sistema Nervoso** | Distúrbios neurológicos (dor, tremores, fraqueza) |
-| 4 | **Doenças Cardiovasculares** | Condições do coração e circulação (arritmia, doença valvular) |
-| 5 | **Condições Patológicas Gerais** | Infecções sistêmicas e condições médicas gerais |
+| ID | `condition_name` | Descrição |
+|----|------------------|-----------|
+| 1 | **neoplasms** | Tumores e condições relacionadas ao câncer |
+| 2 | **digestive system diseases** | Distúrbios do trato gastrointestinal |
+| 3 | **nervous system diseases** | Distúrbios neurológicos |
+| 4 | **cardiovascular diseases** | Condições do coração e circulação |
+| 5 | **general pathological conditions** | Infecções sistêmicas e condições médicas gerais |
 
 ---
 
@@ -214,7 +220,12 @@ Verifique a instalação:
 python -c "import pandas, sklearn, fastapi; print('Dependências instaladas com sucesso')"
 ```
 
-#### 4. Prepare os Dados
+#### 4. Crie o .env a partir do .env_example
+
+Copie o conteúdo do .env_example para um arquivo .env
+
+
+#### 5. Prepare os Dados
 
 ```bash
 # Arquivos de dados devem estar em data/raw/
@@ -227,7 +238,7 @@ ls data/raw/
 # Devem aparecer: medical_tc_labels.csv, medical_tc_train.csv, medical_tc_test.csv
 ```
 
-#### 5. Treine o Modelo
+#### 6. Treine o Modelo
 
 ```bash
 python train_model.py
@@ -253,25 +264,31 @@ Visite: `http://localhost:8000/docs` para documentação interativa Swagger
 
 ### 2. Exemplos de API
 
+> Os exemplos abaixo usam textos em inglês e foram validados contra os artefatos atuais do modelo/API.
+
 #### Predição Única
 
 ```bash
 curl -X POST "http://localhost:8000/predict" \
   -H "Content-Type: application/json" \
   -d '{
-    "texto": "Paciente apresenta tosse persistente e achados anormais em radiografia de tórax consistentes com malignidade pulmonar"
+    "texto": "Advanced pancreatic cancer with metastasis"
   }'
 ```
 
 **Resposta:**
 ```json
 {
-  "texto_original": "Paciente apresenta tosse persistente...",
-  "classe_predita": "neoplasias",
+  "texto_original": "Advanced pancreatic cancer with metastasis",
+  "classe_predita": "neoplasms",
   "id_classe": 1,
-  "confianca": 0.94,
+  "confianca": 0.5427,
   "todas_probabilidades": {
-    "neoplasias": 0.94
+    "neoplasms": 0.5427,
+    "digestive system diseases": 0.0833,
+    "nervous system diseases": 0.082,
+    "cardiovascular diseases": 0.0661,
+    "general pathological conditions": 0.2258
   }
 }
 ```
@@ -283,11 +300,59 @@ curl -X POST "http://localhost:8000/predict-batch" \
   -H "Content-Type: application/json" \
   -d '{
     "textos": [
-      "Paciente com tumor maligno requerendo quimioterapia imediata",
-      "Úlcera gástrica severa causando dor abdominal persistente",
-      "Distúrbio neurológico causando tremores e fraqueza"
+      "Advanced pancreatic cancer with metastasis",
+      "Atrial fibrillation detected on ECG with rapid ventricular response",
+      "Fever, chills, and signs of sepsis of unknown origin"
     ]
   }'
+```
+
+**Resposta:**
+```json
+{
+  "total": 3,
+  "predicoes": [
+    {
+      "texto_original": "Advanced pancreatic cancer with metastasis",
+      "classe_predita": "neoplasms",
+      "id_classe": 1,
+      "confianca": 0.5427,
+      "todas_probabilidades": {
+        "neoplasms": 0.5427,
+        "digestive system diseases": 0.0833,
+        "nervous system diseases": 0.082,
+        "cardiovascular diseases": 0.0661,
+        "general pathological conditions": 0.2258
+      }
+    },
+    {
+      "texto_original": "Atrial fibrillation detected on ECG with rapid ventricular response",
+      "classe_predita": "cardiovascular diseases",
+      "id_classe": 4,
+      "confianca": 0.3822,
+      "todas_probabilidades": {
+        "neoplasms": 0.1014,
+        "digestive system diseases": 0.0754,
+        "nervous system diseases": 0.1176,
+        "cardiovascular diseases": 0.3822,
+        "general pathological conditions": 0.3235
+      }
+    },
+    {
+      "texto_original": "Fever, chills, and signs of sepsis of unknown origin",
+      "classe_predita": "general pathological conditions",
+      "id_classe": 5,
+      "confianca": 0.4091,
+      "todas_probabilidades": {
+        "neoplasms": 0.1636,
+        "digestive system diseases": 0.1219,
+        "nervous system diseases": 0.1723,
+        "cardiovascular diseases": 0.1331,
+        "general pathological conditions": 0.4091
+      }
+    }
+  ]
+}
 ```
 
 #### Obter Informações do Modelo
@@ -315,37 +380,23 @@ pytest tests/ -v --cov=src
 # Teste 1: Predição válida
 POST /predict
 {
-  "texto": "Paciente com câncer pancreático avançado e metástase"
+  "texto": "Advanced pancreatic cancer with metastasis"
 }
-Esperado: id_classe=1 (neoplasias), confianca>0.8
+Esperado: id_classe=1 (neoplasms)
 
-# Teste 2: Condição digestiva
+# Teste 2: Condição cardiovascular
 POST /predict
 {
-  "texto": "Úlcera duodenal severa com sangramento ativo requerendo intervenção endoscópica"
+  "texto": "Atrial fibrillation detected on ECG with rapid ventricular response"
 }
-Esperado: id_classe=2 (doenças do sistema digestivo)
+Esperado: id_classe=4 (cardiovascular diseases)
 
-# Teste 3: Condição cardiovascular
+# Teste 3: Condição patológica geral
 POST /predict
 {
-  "text": "Fibrilação atrial detectada em ECG com resposta ventricular rápida"
+  "texto": "Fever, chills, and signs of sepsis of unknown origin"
 }
-Esperado: condition_id=4 (doenças cardiovasculares)
-
-# Teste 4: Condição neurológica
-POST /predict
-{
-  "text": "Paciente relata fraqueza progressiva em membros inferiores e perda de sensibilidade"
-}
-Esperado: condition_id=3 (doenças do sistema nervoso)
-
-# Teste 5: Condição geral
-POST /predict
-{
-  "text": "Paciente apresenta febre, calafrios e sinais de sepse de origem desconhecida"
-}
-Esperado: condition_id=5 (condições patológicas gerais)
+Esperado: id_classe=5 (general pathological conditions)
 ```
 
 ---
@@ -361,18 +412,20 @@ Classifica uma observação médica única.
 **Requisição:**
 ```json
 {
-  "text": "string (10-10000 caracteres)"
+  "texto": "string (1-5000 caracteres, preferencialmente em inglês)"
 }
 ```
 
 **Resposta (200):**
 ```json
 {
-  "status": "sucesso",
-  "condition_id": 1,
-  "condition": "string",
-  "confidence": 0.92,
-  "input_text": "string"
+  "texto_original": "string",
+  "classe_predita": "string",
+  "id_classe": 1,
+  "confianca": 0.92,
+  "todas_probabilidades": {
+    "neoplasms": 0.92
+  }
 }
 ```
 
@@ -391,22 +444,25 @@ Classifica múltiplas observações médicas (1-100).
 **Requisição:**
 ```json
 {
-  "texts": ["string", "string", ...]
+  "textos": ["string", "string", "..."]
 }
 ```
 
 **Resposta (200):**
 ```json
 {
-  "status": "sucesso",
-  "predictions": [
+  "total": 3,
+  "predicoes": [
     {
-      "label_id": 1,
-      "label_name": "neoplasias",
-      "confidence": 0.92
+      "texto_original": "string",
+      "classe_predita": "string",
+      "id_classe": 1,
+      "confianca": 0.92,
+      "todas_probabilidades": {
+        "neoplasms": 0.92
+      }
     }
-  ],
-  "count": 3
+  ]
 }
 ```
 
@@ -417,9 +473,9 @@ Verifica o status de saúde da API e modelo.
 **Resposta (200):**
 ```json
 {
-  "status": "saudavel",
-  "model_loaded": true,
-  "inference_count": 150
+  "status": "ok",
+  "timestamp": "2026-09-13T02:07:24.629209",
+  "versao_modelo": "1.0.0"
 }
 ```
 
@@ -430,16 +486,21 @@ Recupera metadados e configuração do modelo.
 **Resposta (200):**
 ```json
 {
-  "model_type": "Classificador de Texto Random Forest",
-  "vectorizer_type": "TF-IDF",
+  "nome": "Classificador de Condições Médicas",
+  "tipo": "Random Forest com TF-IDF",
+  "versao": "1.0",
   "n_features": 5000,
   "n_classes": 5,
-  "classes": {
-    "1": "neoplasias",
-    "2": "doenças do sistema digestivo",
-    "3": "doenças do sistema nervoso",
-    "4": "doenças cardiovasculares",
-    "5": "condições patológicas gerais"
+  "classes": [
+    "neoplasms",
+    "digestive system diseases",
+    "nervous system diseases",
+    "cardiovascular diseases",
+    "general pathological conditions"
+  ],
+  "arquitetura": {
+    "vetorizador": "TF-IDF (5000 features, 1-2 gramas)",
+    "classificador": "Random Forest (150 árvores, max_depth=20)"
   }
 }
 ```
@@ -961,39 +1022,16 @@ perf: melhore latência de inferência em 30%
 
 ---
 
-## Licença
-
-MIT License - Veja arquivo LICENSE para detalhes
-
----
-
-## Contribuindo
-
-1. Faça fork do repositório
-2. Crie uma branch de feature (`git checkout -b feature/amazing-feature`)
-3. Faça commit das mudanças usando conventional commits
-4. Faça push para a branch (`git push origin feature/amazing-feature`)
-5. Abra um Pull Request
-
----
-
 ## Suporte
 
-Para problemas, questões ou contribuições:
-- GitHub Issues: [Reporte aqui](https://github.com/seuusuario/classificador_condicao_medica/issues)
 - Documentação: Veja seções de README acima
 - Questões de Modelo: Revise seção Estratégia do Modelo
 
 ---
 
-## Segurança
-
-- Todas as dependências são fixadas a versões específicas em `requirements.txt`
-- Scans de segurança regulares via GitHub Actions
-- Sem credenciais hardcodeadas (use arquivo `.env`)
-- Validação de entrada em todos os endpoints de API
+🧑‍💻 **Desenvolvido por**
+Rodrigo Bismarck dos Santos Araujo - RM373585
+Este projeto é apenas para fins educacionais e segue a licença MIT.
 
 ---
-
-**Última Atualização**: Dezembro de 2024
-**Status**: Pronto para Produção
+📺 Video Método STAR: em construção
