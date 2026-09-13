@@ -192,19 +192,13 @@ cd classificador_condicao_medica
 
 **Usando venv (built-in):**
 ```bash
-python3.11 -m venv venv
+python -m venv venv
 
 # No Windows
 venv\Scripts\activate
 
 # No macOS/Linux
 source venv/bin/activate
-```
-
-**Ou usando conda:**
-```bash
-conda create -n medical-classifier python=3.11
-conda activate medical-classifier
 ```
 
 #### 3. Instale Dependências
@@ -631,8 +625,8 @@ docker compose ps
 ```
 
 **URLs dos Serviços:**
-- **API**: http://localhost:8000
-- **Prometheus**: http://localhost:9090
+- **API**: http://localhost:8000/docs
+- **Prometheus**: http://localhost:9090/targets?search=
 - **Grafana**: http://localhost:3000 (admin/admin)
 
 ### Painéis Grafana
@@ -725,7 +719,10 @@ Arquivos da configuração de imagem do Airflow:
 - `airflow/dags/training_dag.py`
 
 URL da UI do Airflow: `http://localhost:8080`
-
+Para consultar as credenciais execute:
+```bash
+docker compose logs airflow | grep "Login with username"
+```
 ---
 
 ## Otimização de Desempenho
@@ -1034,4 +1031,4 @@ Rodrigo Bismarck dos Santos Araujo - RM373585
 Este projeto é apenas para fins educacionais e segue a licença MIT.
 
 ---
-📺 Video Método STAR: em construção
+📺 Video Método STAR: [Link do video](https://www.youtube.com/watch?v=5sWAAoihrY4)
